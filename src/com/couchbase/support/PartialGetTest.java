@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rx.Observable;
 
@@ -43,6 +44,9 @@ public class PartialGetTest {
 		tester.doExample(bucket, 300);
 		tester.doExample(bucket, 400);
 		tester.doExample(bucket, 500);
+		tester.doExample(bucket, 1000);
+		tester.doExample(bucket, 2000);
+		tester.doExample(bucket, 3000);
 
 		System.out.println("Closing bucket");
 		bucket.close();
@@ -71,7 +75,9 @@ public class PartialGetTest {
 
 		long startTime = System.currentTimeMillis();
 
-		Observable.from(theKeys).flatMap(id -> bucket.async().get(LegacyDocument.create(id))) 
+		AtomicInteger counter = new AtomicInteger();
+		
+		Observable.from(theKeys).flatMap(id -> { counter.incrementAndGet(); return bucket.async().get(LegacyDocument.create(id)); }) 
 		.doOnNext(doc -> results.put(doc.id(), doc.content())) 
 		.last() 
 		.timeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS).toBlocking() 
@@ -87,7 +93,7 @@ public class PartialGetTest {
 			}
 		});		
 
-		System.out.println("After " + (System.currentTimeMillis() - startTime) + "ms, the size of results is " + results.size());
+		System.out.println("After " + (System.currentTimeMillis() - startTime) + "ms, the size of results is " + results.size() + " and counter is " + counter.get());
 
 		boolean doSleeping = false;
 
@@ -117,6 +123,8 @@ public class PartialGetTest {
 			}
 		}
 
+		System.out.println();
+		
 	} // doExample()
 
 }
