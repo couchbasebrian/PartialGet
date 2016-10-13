@@ -5,10 +5,13 @@ package com.couchbase.support;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.print.Doc;
 
 import rx.Observable;
 
@@ -60,7 +63,7 @@ public class PartialGetTest {
 
 	private void doExample(Bucket bucket, int timeoutInMilliseconds) {
 
-		Map<String, Object> results = new HashMap<>(); 
+		Map<String, Object> results = new ConcurrentHashMap<>(); 
 		AtomicBoolean isTimeout = new AtomicBoolean(false);
 
 		int keysToGenerate = 50000;
@@ -73,19 +76,20 @@ public class PartialGetTest {
 
 		System.out.println("Made a list of " + keysToGenerate + " unique keys.");
 
-		long startTime = System.currentTimeMillis();
-
 		AtomicInteger counter = new AtomicInteger();
+
+		long startTime = System.currentTimeMillis();
 		
 		Observable.from(theKeys).flatMap(id -> { counter.incrementAndGet(); return bucket.async().get(LegacyDocument.create(id)); }) 
 		.doOnNext(doc -> results.put(doc.id(), doc.content())) 
 		.last() 
 		.timeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS).toBlocking() 
 		.subscribe(doc -> { 
-			System.out.println("doc");
+			// this is a javax.print.Doc
+			System.out.println("doc: " + Doc.class.getName());
 		}, throwable -> { 
 			if (throwable instanceof TimeoutException) { 		
-				System.out.println("Got a timeout exception after " + ( System.currentTimeMillis() - startTime) + "ms.");
+				System.out.println("Got an expected timeout exception after " + ( System.currentTimeMillis() - startTime) + "ms.");
 				isTimeout.set(true); 
 			}
 			else {
@@ -102,7 +106,7 @@ public class PartialGetTest {
 				Thread.sleep(5000); // sleep 5 seconds
 			}
 			catch (Exception e) {
-				System.out.println("Exception while sleeping: " + e);
+				System.out.println("Unexpected exception while sleeping: " + e);
 			}
 
 			System.out.println("Done sleeping.  After " + (System.currentTimeMillis() - startTime) + "ms, the size of results is " + results.size());
