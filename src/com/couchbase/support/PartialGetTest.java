@@ -42,12 +42,18 @@ public class PartialGetTest {
 		Cluster cluster = CouchbaseCluster.create("hostname");
 		Bucket bucket = cluster.openBucket("BUCKETNAME");
 
+		// Do a number of tests in 100ms increments
 		tester.doExample(bucket, 100);
 		tester.doExample(bucket, 200);
 		tester.doExample(bucket, 300);
 		tester.doExample(bucket, 400);
 		tester.doExample(bucket, 500);
+		tester.doExample(bucket, 600);
+		tester.doExample(bucket, 700);
+		tester.doExample(bucket, 800);
+		tester.doExample(bucket, 900);
 		tester.doExample(bucket, 1000);
+		
 		tester.doExample(bucket, 2000);
 		tester.doExample(bucket, 3000);
 
@@ -83,7 +89,8 @@ public class PartialGetTest {
 		Observable.from(theKeys).flatMap(id -> { counter.incrementAndGet(); return bucket.async().get(LegacyDocument.create(id)); }) 
 		.doOnNext(doc -> results.put(doc.id(), doc.content())) 
 		.last() 
-		.timeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS).toBlocking() 
+		.timeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
+		.toBlocking() 
 		.subscribe(doc -> { 
 			// this is a javax.print.Doc
 			System.out.println("doc: " + Doc.class.getName());
